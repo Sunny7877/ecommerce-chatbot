@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Contact Us - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="fw-bold text-primary mb-3">Contact Us</h1>
+            <p class="lead mb-5">Have questions? We'd love to hear from you.</p>
+            
+            <div class="card shadow-sm border-0 text-start p-4">
+                <form onsubmit="alert('Message sent successfully! (Demo)'); return false;">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

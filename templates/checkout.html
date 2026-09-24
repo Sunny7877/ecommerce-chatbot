@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+{% block title %}Checkout - ShopEase AI{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <h2 class="fw-bold mb-4">Secure Checkout</h2>
+            
+            <div class="checkout-steps">
+                
+                <!-- STEP 1: CART REVIEW -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4" id="step-1">
+                    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold m-0"><span class="badge bg-primary rounded-circle me-2">1</span> Cart Review</h5>
+                        <button class="btn btn-sm btn-link text-decoration-none" onclick="window.location.href='/cart'">Edit</button>
+                    </div>
+                    <div class="card-body border-top">
+                        <div id="checkout-items" class="mb-3">
+                            <!-- Items populated by JS -->
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm" onclick="nextStep(2)">Continue to Delivery</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: DELIVERY DETAILS -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 opacity-50" id="step-2">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="fw-bold m-0"><span class="badge bg-secondary rounded-circle me-2 step-badge">2</span> Delivery Details</h5>
+                    </div>
+                    <div class="card-body border-top d-none" id="step-2-body">
+                        <form id="checkout-form">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Full Name</label>
+                                    <input type="text" id="name" class="form-control" required placeholder="John Doe">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Mobile Number</label>
+                                    <input type="tel" id="phone" class="form-control" required placeholder="9876543210">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Email Address</label>
+                                    <input type="email" id="email" class="form-control" required placeholder="john@example.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">House/Flat Number</label>
+                                    <input type="text" id="house" class="form-control" required placeholder="A-101, Crystal Apts">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Street/Area</label>
+                                    <input type="text" id="address" class="form-control" required placeholder="Main Street, Downtown">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold">City</label>
+                                    <input type="text" id="city" class="form-control" required placeholder="Mumbai">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">State</label>
+                                    <input type="text" id="state" class="form-control" required placeholder="Maharashtra">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">PIN Code</label>
+                                    <input type="text" id="pin" class="form-control" required placeholder="400001">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-light rounded-pill px-4" onclick="nextStep(1)">Back</button>
+                                <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">Continue to Payment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- STEP 3: PAYMENT METHOD -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 opacity-50" id="step-3">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="fw-bold m-0"><span class="badge bg-secondary rounded-circle me-2 step-badge">3</span> Payment Method</h5>
+                    </div>
+                    <div class="card-body border-top d-none" id="step-3-body">
+                        
+                        <div class="alert alert-info border-0 rounded-3 mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-shield-check fs-2 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Secure Test Mode Payment</h6>
+                                    <p class="mb-0 small">This is a sandbox environment. Use test credentials provided by the gateway. Never enter real card details.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-3">
+                            <!-- Direct UPI QR Code Payment -->
+                            <button id="btn-upi-qr" class="btn btn-outline-dark text-start p-3 rounded-4 d-flex align-items-center justify-content-between payment-option hover-shadow border-2 border-primary">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3"><i class="bi bi-qr-code-scan text-primary fs-4"></i></div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-primary">Pay with UPI QR Code</h6>
+                                        <small class="text-muted">Scan using GPay, PhonePe, Paytm</small>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-right text-primary"></i>
+                            </button>
+
+                            <button id="btn-razorpay" class="btn btn-outline-dark text-start p-3 rounded-4 d-flex align-items-center justify-content-between payment-option hover-shadow">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light p-2 rounded-circle me-3"><i class="bi bi-credit-card-2-front text-secondary fs-4"></i></div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0">Cards & Netbanking</h6>
+                                        <small class="text-muted">Debit/Credit Cards, Net Banking, Wallets</small>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </button>
+
+                            <button id="btn-cod" class="btn btn-outline-dark text-start p-3 rounded-4 d-flex align-items-center justify-content-between payment-option hover-shadow">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light p-2 rounded-circle me-3"><i class="bi bi-cash-stack text-success fs-4"></i></div>
+                                    <div>
+                                        <h6 class="fw-bold mb-0">Cash on Delivery</h6>
+                                        <small class="text-muted">Pay at your doorstep</small>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" onclick="nextStep(2)">Back</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ORDER SUMMARY -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 position-sticky" style="top: 20px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Order Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Items (<span id="summary-count">0</span>)</span>
+                        <span class="fw-semibold" id="summary-subtotal">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount</span>
+                        <span id="summary-discount">-₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Estimated Tax (18%)</span>
+                        <span class="fw-semibold" id="summary-tax">₹0</span>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold fs-5">Total Payable</span>
+                        <span class="fw-bold fs-4 text-primary" id="summary-total">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom UPI QR Modal (Bypasses Razorpay Account Restrictions for Demo) -->
+<div class="modal fade" id="upiQrModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center pt-0 px-4 pb-4">
+                <h4 class="fw-bold mb-1">Scan & Pay</h4>
+                <p class="text-muted small mb-4">Use GPay, PhonePe, or Paytm</p>
+                
+                <div class="bg-light p-3 rounded-4 d-inline-block mb-4 border shadow-sm">
+                    <!-- Dynamic QR code generated by API based on total amount -->
+                    <img id="demo-qr-image" src="" alt="UPI QR Code" class="img-fluid rounded" style="width: 200px; height: 200px;">
+                </div>
+                
+                <div class="d-flex justify-content-center align-items-center mb-4">
+                    <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                    <span class="text-primary fw-semibold">Waiting for payment...</span>
+                </div>
+
+                <div class="alert alert-warning small text-start mb-0">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    <strong>Demo Mode:</strong> Since this is a test project, you don't need to actually scan this. Just click the button below to simulate a successful payment.
+                </div>
+                
+                <button id="btn-simulate-scan" class="btn btn-success w-100 rounded-pill py-3 fw-bold mt-3 shadow-sm">
+                    <i class="bi bi-check-circle me-2"></i> Simulate Successful Scan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let finalAmount = 0;
+    let currentDemoOrderId = null;
+
+    // Load Cart Items
+    function loadCheckoutItems() {
+        const container = document.getElementById('checkout-items');
+        if(cart.length === 0) {
+            window.location.href = '/cart';
+            return;
+        }
+
+        let subtotal = 0;
+        let discount = 0;
+        container.innerHTML = '';
+
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            subtotal += itemTotal;
+            // Simulated discount for UI realism
+            discount += (itemTotal * 0.05);
+
+            container.innerHTML += `
+                <div class="d-flex align-items-center mb-3">
+                    <img src="${item.image}" alt="${item.name}" class="rounded-3 border" style="width: 60px; height: 60px; object-fit: cover;">
+                    <div class="ms-3 flex-grow-1">
+                        <h6 class="fw-bold mb-0 text-truncate" style="max-width: 250px;">${item.name}</h6>
+                        <small class="text-muted">Qty: ${item.quantity}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-dark">₹${itemTotal.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        const tax = (subtotal - discount) * 0.18;
+        finalAmount = Math.round(subtotal - discount + tax);
+
+        document.getElementById('summary-count').textContent = cart.length;
+        document.getElementById('summary-subtotal').textContent = `₹${Math.round(subtotal).toLocaleString()}`;
+        document.getElementById('summary-discount').textContent = `-₹${Math.round(discount).toLocaleString()}`;
+        document.getElementById('summary-tax').textContent = `₹${Math.round(tax).toLocaleString()}`;
+        document.getElementById('summary-total').textContent = `₹${finalAmount.toLocaleString()}`;
+    }
+
+    // Step Navigation
+    function nextStep(step) {
+        // Reset all steps opacity and hide bodies
+        [1, 2, 3].forEach(i => {
+            const el = document.getElementById(`step-${i}`);
+            const body = document.getElementById(`step-${i}-body`);
+            const badge = el.querySelector('.badge');
+            
+            if (i === step) {
+                el.classList.remove('opacity-50');
+                if (body) body.classList.remove('d-none');
+                badge.classList.replace('bg-secondary', 'bg-primary');
+            } else {
+                el.classList.add('opacity-50');
+                if (body) body.classList.add('d-none');
+                if (badge.classList.contains('bg-primary')) {
+                    badge.classList.replace('bg-primary', 'bg-secondary');
+                }
+            }
+        });
+    }
+
+    // Handle Form Submission
+    document.getElementById('checkout-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        nextStep(3);
+    });
+
+    // --- DEMO UPI QR FLOW (Bypasses Razorpay Restriction) ---
+    const btnUpiQr = document.getElementById('btn-upi-qr');
+    if(btnUpiQr) {
+        btnUpiQr.addEventListener('click', async () => {
+            const btn = btnUpiQr;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Generating QR...`;
+            btn.disabled = true;
+
+            const payload = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('house').value + ', ' + document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                pin: document.getElementById('pin').value,
+                total_amount: finalAmount,
+                payment_method: 'UPI QR',
+                items: cart
+            };
+
+            try {
+                const res = await fetch('/api/create-order', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentDemoOrderId = data.order_id;
+                    // Generate dynamic QR containing the exact amount
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=shopease@razorpay&pn=ShopEase&am=${finalAmount}&cu=INR`;
+                    document.getElementById('demo-qr-image').src = qrUrl;
+                    
+                    // Show the modal
+                    const upiModal = new bootstrap.Modal(document.getElementById('upiQrModal'));
+                    upiModal.show();
+                } else {
+                    alert('Error creating order.');
+                }
+            } catch (e) {
+                alert('Error connecting to server.');
+            }
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        });
+    }
+
+    // Handle Simulate Scan Button
+    document.getElementById('btn-simulate-scan').addEventListener('click', async () => {
+        if(!currentDemoOrderId) return;
+        const btn = document.getElementById('btn-simulate-scan');
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Processing Payment...`;
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/demo-upi-confirm', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({order_id: currentDemoOrderId})
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                localStorage.removeItem('cart');
+                window.location.href = data.redirect_url;
+            } else {
+                window.location.href = '/payment-failed/' + currentDemoOrderId;
+            }
+        } catch (e) {
+            window.location.href = '/payment-failed/' + currentDemoOrderId;
+        }
+    });
+
+    // --- STANDARD RAZORPAY FLOW (For Cards/Netbanking) ---
+    async function initRazorpay() {
+        const btn = document.getElementById('btn-razorpay');
+        if(!btn) return;
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Processing...`;
+        btn.disabled = true;
+
+        const payload = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('house').value + ', ' + document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            pin: document.getElementById('pin').value,
+            total_amount: finalAmount,
+            payment_method: 'Razorpay',
+            items: cart
+        };
+
+        try {
+            const res = await fetch('/api/create-order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                if (!data.razorpay_order_id) {
+                    alert('Razorpay Keys are missing. Cannot open payment gateway.');
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Open Razorpay Checkout
+                let options = {
+                    "key": "{{ razorpay_key }}",
+                    "amount": data.amount, // in paise
+                    "currency": "INR",
+                    "name": "ShopEase AI",
+                    "description": "Test Transaction",
+                    "image": "https://dummyimage.com/128x128/2563eb/ffffff&text=S",
+                    "order_id": data.razorpay_order_id,
+                    "handler": function (response){
+                        // Payment Success Callback - Verify on Server
+                        verifyPayment(response, data.order_id);
+                    },
+                    "prefill": {
+                        "name": payload.name,
+                        "email": payload.email,
+                        "contact": payload.phone
+                    },
+                    "theme": {
+                        "color": "#2563eb"
+                    }
+                };
+                
+                const rzp1 = new Razorpay(options);
+                rzp1.on('payment.failed', function (response){
+                    window.location.href = '/payment-failed/' + data.order_id;
+                });
+                rzp1.open();
+                
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert('Error connecting to server.');
+        }
+
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+    }
+
+    document.getElementById('btn-razorpay').addEventListener('click', () => initRazorpay());
+
+    async function verifyPayment(response, receipt_order_id) {
+        // Show full screen loader
+        document.body.innerHTML += `
+            <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+                <h4 class="mt-3 fw-bold">Verifying Payment...</h4>
+                <p class="text-muted">Please do not refresh the page.</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    receipt_order_id: receipt_order_id
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                localStorage.removeItem('cart'); // Clear cart
+                window.location.href = data.redirect_url;
+            } else {
+                window.location.href = '/payment-failed/' + receipt_order_id;
+            }
+        } catch (e) {
+            window.location.href = '/payment-failed/' + receipt_order_id;
+        }
+    }
+
+    // Handle COD
+    document.getElementById('btn-cod').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-cod');
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Processing...`;
+        btn.disabled = true;
+
+        const payload = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('house').value + ', ' + document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            pin: document.getElementById('pin').value,
+            total_amount: finalAmount,
+            payment_method: 'COD',
+            items: cart
+        };
+
+        try {
+            const res = await fetch('/api/create-order', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                // Confirm COD
+                const confirmRes = await fetch('/api/cod-confirm', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({order_id: data.order_id})
+                });
+                const confirmData = await confirmRes.json();
+                
+                if(confirmData.success) {
+                    localStorage.removeItem('cart');
+                    window.location.href = confirmData.redirect_url;
+                }
+            }
+        } catch (e) {
+            alert('Error processing order.');
+        }
+        btn.innerHTML = `Cash on Delivery`;
+        btn.disabled = false;
+    });
+
+    document.addEventListener('DOMContentLoaded', loadCheckoutItems);
+</script>
+{% endblock %}

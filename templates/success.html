@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Order Confirmed - ShopEase AI{% endblock %}
+
+{% block content %}
+<div class="container my-5 text-center">
+    
+    <div class="card border-0 shadow-sm rounded-4 mx-auto" style="max-width: 700px;">
+        <div class="card-body p-5">
+            <!-- Success Icon -->
+            <div class="mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+            </div>
+            
+            <h1 class="fw-bold mb-3">Payment Successful!</h1>
+            <p class="lead text-muted mb-4">Thank you for shopping with ShopEase AI. Your order has been placed and is being processed.</p>
+            
+            <!-- Details Grid -->
+            <div class="bg-light p-4 rounded-4 text-start mb-4">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small fw-bold">ORDER ID</span>
+                        <span class="fw-bold fs-5">{{ order.id }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small fw-bold">DATE & TIME</span>
+                        <span class="fw-semibold">{{ order.created_at }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small fw-bold">AMOUNT PAID</span>
+                        <span class="fw-bold fs-5 text-primary">₹{{ "{:,.0f}".format(order.total_amount) }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block small fw-bold">PAYMENT METHOD</span>
+                        {% if order.payment_method == 'Razorpay' %}
+                            <span class="badge bg-success">Prepaid (Online)</span>
+                            <br><small class="text-muted">ID: {{ order.razorpay_payment_id }}</small>
+                        {% else %}
+                            <span class="badge bg-secondary">Cash on Delivery</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items -->
+            <div class="text-start mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Items Ordered</h5>
+                {% for item in items %}
+                <div class="d-flex align-items-center mb-3">
+                    <img src="{{ item.image }}" alt="{{ item.name }}" class="rounded border" style="width: 50px; height: 50px; object-fit: cover;">
+                    <div class="ms-3 flex-grow-1">
+                        <h6 class="fw-bold m-0">{{ item.name }}</h6>
+                        <small class="text-muted">Qty: {{ item.quantity }}</small>
+                    </div>
+                    <div class="fw-bold text-dark">
+                        ₹{{ "{:,.0f}".format(item.price * item.quantity) }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Delivery -->
+            <div class="text-start bg-light p-4 rounded-4 mb-5">
+                <h5 class="fw-bold mb-2">Delivery Address</h5>
+                <p class="m-0 fw-semibold">{{ order.name }}</p>
+                <p class="m-0 text-muted">{{ order.address }}, {{ order.city }}, {{ order.state }} - {{ order.pin }}</p>
+                <p class="m-0 text-muted">Phone: {{ order.phone }}</p>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm" onclick="window.print()">
+                    <i class="bi bi-download me-2"></i> Download Receipt
+                </button>
+                <a href="{{ url_for('track_order') }}" class="btn btn-outline-dark px-4 py-2 rounded-pill fw-bold">
+                    <i class="bi bi-geo-alt me-2"></i> Track Order
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-light border px-4 py-2 rounded-pill fw-bold text-muted">
+                    Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

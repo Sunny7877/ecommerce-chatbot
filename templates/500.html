@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Server Error - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+    <h1 class="display-1 fw-bold text-danger">500</h1>
+    <h2 class="mb-4">Internal Server Error</h2>
+    <p class="lead mb-5">Something went wrong on our end. We are working on it!</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">Return Home</a>
+</div>
+{% endblock %}

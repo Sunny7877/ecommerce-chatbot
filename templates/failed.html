@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Payment Failed - ShopEase AI{% endblock %}
+
+{% block content %}
+<div class="container my-5 text-center">
+    
+    <div class="card border-0 shadow-sm rounded-4 mx-auto" style="max-width: 600px;">
+        <div class="card-body p-5">
+            <!-- Failure Icon -->
+            <div class="mb-4">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 5rem;"></i>
+            </div>
+            
+            <h1 class="fw-bold mb-3">Payment Failed</h1>
+            <p class="lead text-muted mb-4">We could not process your payment. No amount was deducted from your account. If it was, it will be refunded within 3-5 working days.</p>
+            
+            <div class="bg-light p-4 rounded-4 text-start mb-5 mx-auto" style="max-width: 400px;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted fw-bold">ORDER ID</span>
+                    <span class="fw-bold">{{ order.id }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted fw-bold">AMOUNT</span>
+                    <span class="fw-bold text-danger">₹{{ "{:,.0f}".format(order.total_amount) }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted fw-bold">STATUS</span>
+                    <span class="badge bg-danger">Failed</span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('cart') }}" class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm">
+                    <i class="bi bi-arrow-repeat me-2"></i> Try Payment Again
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-light border px-4 py-2 rounded-pill fw-bold text-muted">
+                    Return to Shop
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

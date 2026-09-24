@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}ShopEase AI - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center position-relative overflow-hidden">
+    <div class="container position-relative" style="z-index: 2;">
+        <h1 class="display-3 hero-title mb-3">Discover Products.<br><span class="text-info">Shop Smarter.</span></h1>
+        <p class="lead mb-4 fw-light text-white-50">Find exactly what you need with our AI-powered shopping assistant.</p>
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <a href="{{ url_for('products_page') }}" class="btn btn-light btn-lg px-5 py-3 rounded-pill fw-bold text-dark shadow-lg">Shop Now</a>
+            <button class="btn btn-outline-info btn-lg px-5 py-3 rounded-pill fw-bold text-white shadow" onclick="document.getElementById('chatbot-btn').click()">Ask AI Assistant</button>
+        </div>
+    </div>
+    <!-- Abstract Shapes -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="opacity: 0.1; background: url('https://www.transparenttextures.com/patterns/cubes.png'); z-index: 1;"></div>
+</section>
+
+<div class="container my-5">
+    <!-- Categories Row -->
+    <h3 class="fw-bold mb-4">Shop by Category</h3>
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3 mb-5 text-center">
+        {% set cats = [
+            ('Smartphones', 'bi-phone', 'primary'), 
+            ('Laptops', 'bi-laptop', 'success'), 
+            ('Audio', 'bi-headphones', 'danger'), 
+            ('Smart Watches', 'bi-smartwatch', 'info'), 
+            ('Shoes', 'bi-shop', 'warning'), 
+            ('Fashion', 'bi-bag', 'secondary')
+        ] %}
+        {% for cat, icon, color in cats %}
+        <div class="col">
+            <a href="{{ url_for('products_page', category=cat) }}" class="card border-0 shadow-sm h-100 py-4 text-decoration-none text-dark hover-shadow transition">
+                <i class="bi {{ icon }} fs-1 text-{{ color }} mb-2"></i>
+                <span class="fw-bold">{{ cat }}</span>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Reusable Macro for Product Grid -->
+    {% macro product_grid(title, icon, items) %}
+    {% if items %}
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-5">
+        <h3 class="fw-bold m-0"><i class="bi {{ icon }} text-primary me-2"></i> {{ title }}</h3>
+        <a href="{{ url_for('products_page') }}" class="btn btn-link text-decoration-none fw-bold">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for p in items %}
+        <div class="col">
+            <div class="card product-card border-0 shadow-sm h-100 position-relative">
+                {% if p.badge %}
+                <span class="badge bg-danger position-absolute top-0 start-0 m-3 px-2 py-1 shadow-sm">{{ p.badge }}</span>
+                {% elif p.discount_percentage > 0 %}
+                <span class="badge bg-success position-absolute top-0 start-0 m-3 px-2 py-1 shadow-sm">{{ p.discount_percentage }}% OFF</span>
+                {% endif %}
+                
+                <button class="btn btn-light position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn" 
+                        onclick="toggleWishlist({{ p.id }}, '{{ p.name }}', {{ p.price }}, '{{ p.image }}')" 
+                        title="Add to Wishlist">
+                    <i class="bi bi-heart-fill"></i>
+                </button>
+
+                <a href="{{ url_for('product_details', product_id=p.id) }}" class="product-img-wrapper">
+                    <img src="{{ p.image }}" class="product-img w-100" alt="{{ p.name }}">
+                </a>
+                
+                <div class="card-body d-flex flex-column pt-0">
+                    <div class="text-muted small mb-1 fw-semibold">{{ p.brand }}</div>
+                    <h5 class="card-title text-truncate fw-bold mb-1">
+                        <a href="{{ url_for('product_details', product_id=p.id) }}" class="text-dark">{{ p.name }}</a>
+                    </h5>
+                    <div class="mb-2 small">
+                        <span class="text-warning"><i class="bi bi-star-fill"></i> {{ p.rating }}</span> 
+                        <span class="text-muted">({{ p.review_count }})</span>
+                    </div>
+                    <div class="mt-auto pt-2 border-top">
+                        <div class="d-flex align-items-baseline mb-3">
+                            <span class="fs-5 fw-bold text-dark me-2">₹{{ "{:,.0f}".format(p.price) }}</span>
+                            {% if p.original_price and p.original_price > p.price %}
+                            <span class="text-decoration-line-through text-muted small">₹{{ "{:,.0f}".format(p.original_price) }}</span>
+                            {% endif %}
+                        </div>
+                        <button class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm" onclick="addToCart({{ p.id }}, '{{ p.name }}', {{ p.price }}, '{{ p.image }}')">
+                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endmacro %}
+
+    {{ product_grid('Best Sellers', 'bi-star-fill', best_sellers) }}
+    
+    <!-- Promotional Banner -->
+    <div class="row mt-5 mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-primary text-white overflow-hidden" style="border-radius: 20px;">
+                <div class="row g-0 align-items-center">
+                    <div class="col-md-8 p-5">
+                        <h2 class="fw-bold mb-3">Upgrade Your Tech Arsenal</h2>
+                        <p class="lead mb-4 text-white-50">Get up to 40% off on top-tier smartphones and premium laptops. Limited time offer!</p>
+                        <a href="{{ url_for('products_page', category='Laptops') }}" class="btn btn-light btn-lg px-4 fw-bold rounded-pill text-primary shadow">Shop Electronics</a>
+                    </div>
+                    <div class="col-md-4 d-none d-md-block text-center p-4">
+                        <i class="bi bi-laptop text-white opacity-25" style="font-size: 8rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ product_grid("Today's Best Deals", 'bi-fire', deals) }}
+    {{ product_grid('New Arrivals', 'bi-stars', new_arrivals) }}
+    {{ product_grid('Trending Now', 'bi-graph-up-arrow', trending) }}
+    
+</div>
+{% endblock %}

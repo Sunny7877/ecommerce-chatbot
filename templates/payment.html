@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Secure Payment - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Secure Mock Payment</h4>
+                    <small>TEST/SANDBOX MODE (For Demo Only)</small>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info text-center mb-4">
+                        <i class="bi bi-info-circle"></i> This is a Demo Payment Gateway for the TYCS Mini Project. No real money will be deducted.
+                    </div>
+                    
+                    <h5 class="text-center mb-3">Amount to Pay: <strong>₹{{ "%.2f"|format(order.total_amount) }}</strong></h5>
+                    <p class="text-center text-muted mb-4">Order ID: {{ order.id }}</p>
+
+                    <div class="d-grid gap-3">
+                        <button onclick="processPayment('Credit/Debit Card')" class="btn btn-outline-primary py-3 text-start">
+                            <i class="bi bi-credit-card me-2"></i> Pay with Credit/Debit Card
+                        </button>
+                        <button onclick="processPayment('UPI')" class="btn btn-outline-success py-3 text-start">
+                            <i class="bi bi-phone me-2"></i> Pay with UPI (GPay/PhonePe)
+                        </button>
+                        <button onclick="processPayment('Net Banking')" class="btn btn-outline-info py-3 text-start">
+                            <i class="bi bi-bank me-2"></i> Pay with Net Banking
+                        </button>
+                        <button onclick="processPayment('Cash on Delivery')" class="btn btn-outline-secondary py-3 text-start">
+                            <i class="bi bi-cash me-2"></i> Cash on Delivery
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function processPayment(method) {
+    if(confirm(`Process mock payment via ${method}?`)) {
+        const payload = {
+            order_id: '{{ order.id }}',
+            method: method,
+            status: method === 'Cash on Delivery' ? 'COD' : 'Successful'
+        };
+        
+        // Show processing state
+        document.body.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center vh-100 flex-column">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+            <h4>Verifying Payment Securely...</h4>
+        </div>`;
+        
+        fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                window.location.href = '/confirmation/' + data.order_id;
+            } else {
+                alert('Payment verification failed!');
+                window.location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
