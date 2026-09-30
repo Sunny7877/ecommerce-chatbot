@@ -15,6 +15,47 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'supersecretkey_tycs')
 
+# Register Blueprints
+from auth import auth_bp
+from admin import admin_bp
+from customer import customer_bp
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(customer_bp)
+
+@app.route('/secret-migrate-db')
+def secret_migrate_db():
+    db_url = os.getenv('DATABASE_URL')
+    if db_url:
+        import psycopg2
+        try:
+            conn = psycopg2.connect(db_url, sslmode='require')
+            cur = conn.cursor()
+            cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL, mobile VARCHAR(20), address TEXT, city VARCHAR(100),
+                state VARCHAR(100), pin VARCHAR(20), role VARCHAR(20) DEFAULT 'customer',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);''')
+            try:
+                cur.execute('ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);')
+            except psycopg2.errors.DuplicateColumn:
+                conn.rollback()
+                
+            from werkzeug.security import generate_password_hash
+            pw_hash = generate_password_hash('admin123')
+            try:
+                cur.execute("INSERT INTO users (name, email, password_hash, role) VALUES ('Admin', 'admin@shopease.com', %s, 'admin')", (pw_hash,))
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                
+            conn.commit()
+            conn.close()
+            return "Postgres DB Migrated! Default admin created: admin@shopease.com / admin123"
+        except Exception as e:
+            return f"Migration error: {e}"
+    return "No DATABASE_URL found. Running locally? Local SQLite already migrated."
+
 # Initialize AI
 AI_KEY = os.getenv('API_KEY')
 if AI_KEY:
@@ -164,15 +205,16 @@ def api_create_order():
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)})
 
+    user_id = session.get('user_id')
     conn.execute('''
         INSERT INTO orders (
             id, razorpay_order_id, name, email, phone, 
-            address, city, state, pin, total_amount, payment_method, payment_status, order_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            address, city, state, pin, total_amount, payment_method, payment_status, order_status, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         order_id, razorpay_order_id, data['name'], data['email'], data['phone'], 
         data['address'], data['city'], data['state'], data['pin'], total_amount,
-        payment_method, 'CREATED', 'Pending'
+        payment_method, 'CREATED', 'Pending', user_id
     ))
     
     for item in data['items']:

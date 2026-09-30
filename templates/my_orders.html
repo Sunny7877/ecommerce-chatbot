@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}My Orders - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('customer.dashboard') }}" class="list-group-item list-group-item-action"><i class="bi bi-grid me-2"></i> Dashboard</a>
+                <a href="{{ url_for('customer.my_orders') }}" class="list-group-item list-group-item-action active"><i class="bi bi-box-seam me-2"></i> My Orders</a>
+                <a href="{{ url_for('track_order') }}" class="list-group-item list-group-item-action"><i class="bi bi-geo-alt me-2"></i> Track Order</a>
+                <a href="{{ url_for('customer.profile') }}" class="list-group-item list-group-item-action"><i class="bi bi-person me-2"></i> Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <h3 class="mb-4">My Orders</h3>
+            {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Total Amount</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td class="fw-bold">{{ order.id }}</td>
+                                <td>{{ order.created_at[:10] }}</td>
+                                <td>₹{{ order.total_amount }}</td>
+                                <td><span class="badge bg-{{ 'success' if order.payment_status == 'PAID' else 'secondary' }}">{{ order.payment_status }}</span></td>
+                                <td><span class="badge bg-{{ 'primary' if order.order_status == 'Delivered' else 'info' }}">{{ order.order_status }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">You have not placed any orders yet. <a href="{{ url_for('products_page') }}">Start shopping!</a></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

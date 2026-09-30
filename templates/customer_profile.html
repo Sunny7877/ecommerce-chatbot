@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}My Profile - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('customer.dashboard') }}" class="list-group-item list-group-item-action"><i class="bi bi-grid me-2"></i> Dashboard</a>
+                <a href="{{ url_for('customer.my_orders') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam me-2"></i> My Orders</a>
+                <a href="{{ url_for('track_order') }}" class="list-group-item list-group-item-action"><i class="bi bi-geo-alt me-2"></i> Track Order</a>
+                <a href="{{ url_for('customer.profile') }}" class="list-group-item list-group-item-action active"><i class="bi bi-person me-2"></i> Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <h3 class="mb-4">My Profile</h3>
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <p><strong>Name:</strong> {{ user.name }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Mobile:</strong> {{ user.mobile }}</p>
+                    <p><strong>Role:</strong> <span class="badge bg-secondary">{{ user.role }}</span></p>
+                    <p><strong>Member Since:</strong> {{ user.created_at[:10] }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Add Product - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h3 class="mb-4">Add New Product</h3>
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <form action="{{ url_for('admin.add_product') }}" method="POST">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Product Name</label>
+                                <input type="text" name="name" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Brand</label>
+                                <input type="text" name="brand" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Category</label>
+                                <input type="text" name="category" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Price (₹)</label>
+                                <input type="number" name="price" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Stock</label>
+                                <input type="number" name="stock" class="form-control" value="0" required>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Image URL</label>
+                                <input type="text" name="image" class="form-control">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Badge (e.g., Best Seller)</label>
+                                <input type="text" name="badge" class="form-control">
+                            </div>
+                            <div class="col-md-12 mb-4">
+                                <label class="form-label fw-bold">Description</label>
+                                <textarea name="description" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Product</button>
+                        <a href="{{ url_for('admin.products') }}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Inventory - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-2 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">Dashboard</a>
+                <a href="{{ url_for('admin.products') }}" class="list-group-item list-group-item-action">Products</a>
+                <a href="{{ url_for('admin.inventory') }}" class="list-group-item list-group-item-action active">Inventory</a>
+                <a href="{{ url_for('admin.orders') }}" class="list-group-item list-group-item-action">Orders</a>
+                <a href="{{ url_for('admin.payments') }}" class="list-group-item list-group-item-action">Payments</a>
+                <a href="{{ url_for('admin.customers') }}" class="list-group-item list-group-item-action">Customers</a>
+            </div>
+        </div>
+        <div class="col-md-10">
+            <h3 class="mb-4">Inventory Management</h3>
+            <div class="card shadow border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product Name</th>
+                                    <th>Current Stock</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.id }}</td>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.stock }}</td>
+                                    <td>
+                                        {% if product.stock == 0 %}
+                                            <span class="badge bg-danger">OUT OF STOCK</span>
+                                        {% elif product.stock < 10 %}
+                                            <span class="badge bg-warning text-dark">LOW STOCK</span>
+                                        {% else %}
+                                            <span class="badge bg-success">IN STOCK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

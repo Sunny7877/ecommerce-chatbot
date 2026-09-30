@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Reports - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-2 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">Dashboard</a>
+                <a href="{{ url_for('admin.products') }}" class="list-group-item list-group-item-action">Products</a>
+                <a href="{{ url_for('admin.inventory') }}" class="list-group-item list-group-item-action">Inventory</a>
+                <a href="{{ url_for('admin.orders') }}" class="list-group-item list-group-item-action">Orders</a>
+                <a href="{{ url_for('admin.payments') }}" class="list-group-item list-group-item-action">Payments</a>
+                <a href="{{ url_for('admin.customers') }}" class="list-group-item list-group-item-action">Customers</a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action active">Reports</a>
+            </div>
+        </div>
+        <div class="col-md-10">
+            <h3 class="mb-4">Reports</h3>
+            <div class="alert alert-info">
+                Advanced charting and detailed CSV reports will be available in the next release. <br>
+                For now, please refer to the main Dashboard for high-level statistics.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

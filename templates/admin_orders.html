@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Manage Orders - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-2 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">Dashboard</a>
+                <a href="{{ url_for('admin.products') }}" class="list-group-item list-group-item-action">Products</a>
+                <a href="{{ url_for('admin.inventory') }}" class="list-group-item list-group-item-action">Inventory</a>
+                <a href="{{ url_for('admin.orders') }}" class="list-group-item list-group-item-action active">Orders</a>
+                <a href="{{ url_for('admin.payments') }}" class="list-group-item list-group-item-action">Payments</a>
+                <a href="{{ url_for('admin.customers') }}" class="list-group-item list-group-item-action">Customers</a>
+            </div>
+        </div>
+        <div class="col-md-10">
+            <h3 class="mb-4">Manage Orders</h3>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <div class="card shadow border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Total Amount</th>
+                                    <th>Payment Status</th>
+                                    <th>Order Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.id }}</td>
+                                    <td>{{ order.name }}<br><small class="text-muted">{{ order.email }}</small></td>
+                                    <td>₹{{ order.total_amount }}</td>
+                                    <td><span class="badge bg-{{ 'success' if order.payment_status == 'PAID' else 'secondary' }}">{{ order.payment_status }}</span></td>
+                                    <td>
+                                        <form action="{{ url_for('admin.update_order_status', order_id=order.id) }}" method="POST" class="d-flex">
+                                            <select name="status" class="form-select form-select-sm me-2" style="width:130px;">
+                                                <option value="Pending" {% if order.order_status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                <option value="Confirmed" {% if order.order_status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                                <option value="Processing" {% if order.order_status == 'Processing' %}selected{% endif %}>Processing</option>
+                                                <option value="Shipped" {% if order.order_status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                                                <option value="Out for Delivery" {% if order.order_status == 'Out for Delivery' %}selected{% endif %}>Out for Delivery</option>
+                                                <option value="Delivered" {% if order.order_status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                                <option value="Cancelled" {% if order.order_status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

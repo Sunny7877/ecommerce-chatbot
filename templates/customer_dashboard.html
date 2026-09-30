@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard - ShopEase AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group shadow-sm border-0">
+                <a href="{{ url_for('customer.dashboard') }}" class="list-group-item list-group-item-action active"><i class="bi bi-grid me-2"></i> Dashboard</a>
+                <a href="{{ url_for('customer.my_orders') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam me-2"></i> My Orders</a>
+                <a href="{{ url_for('track_order') }}" class="list-group-item list-group-item-action"><i class="bi bi-geo-alt me-2"></i> Track Order</a>
+                <a href="{{ url_for('customer.profile') }}" class="list-group-item list-group-item-action"><i class="bi bi-person me-2"></i> Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <h3 class="mb-4">Welcome back, {{ session.name }}!</h3>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 bg-primary text-white h-100">
+                        <div class="card-body">
+                            <h5>Recent Orders</h5>
+                            <p class="display-6">{{ orders|length }}</p>
+                            <a href="{{ url_for('customer.my_orders') }}" class="text-white">View All Orders &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

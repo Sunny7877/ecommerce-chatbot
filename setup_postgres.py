@@ -21,6 +21,24 @@ try:
     cur.execute('DROP TABLE IF EXISTS order_items CASCADE;')
     cur.execute('DROP TABLE IF EXISTS orders CASCADE;')
     cur.execute('DROP TABLE IF EXISTS products CASCADE;')
+    cur.execute('DROP TABLE IF EXISTS users CASCADE;')
+
+    print("Creating users table...")
+    cur.execute('''
+        CREATE TABLE users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            mobile VARCHAR(20),
+            address TEXT,
+            city VARCHAR(100),
+            state VARCHAR(100),
+            pin VARCHAR(20),
+            role VARCHAR(20) DEFAULT 'customer',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
 
     print("Creating products table...")
     cur.execute('''
@@ -50,6 +68,7 @@ try:
             razorpay_order_id VARCHAR(100),
             razorpay_payment_id VARCHAR(100),
             razorpay_signature VARCHAR(255),
+            user_id INTEGER REFERENCES users(id),
             name VARCHAR(100),
             email VARCHAR(100),
             phone VARCHAR(20),
