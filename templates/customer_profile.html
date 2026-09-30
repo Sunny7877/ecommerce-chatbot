@@ -20,7 +20,7 @@
                     <p><strong>Email:</strong> {{ user.email }}</p>
                     <p><strong>Mobile:</strong> {{ user.mobile }}</p>
                     <p><strong>Role:</strong> <span class="badge bg-secondary">{{ user.role }}</span></p>
-                    <p><strong>Member Since:</strong> {{ user.created_at[:10] }}</p>
+                    <p><strong>Member Since:</strong> {{ (user.created_at | string)[:10] }}</p>
                 </div>
             </div>
         </div>

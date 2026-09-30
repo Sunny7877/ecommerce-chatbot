@@ -35,7 +35,7 @@
                                     <td class="fw-bold">{{ c.name }}</td>
                                     <td>{{ c.email }}</td>
                                     <td>{{ c.mobile }}</td>
-                                    <td>{{ c.created_at[:10] }}</td>
+                                    <td>{{ (c.created_at | string)[:10] }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

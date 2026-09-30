@@ -97,7 +97,7 @@ def update_order_status(order_id):
 @admin_required
 def payments():
     conn = get_db()
-    payments = conn.execute("SELECT order_id, razorpay_payment_id, payment_method, amount, payment_status, created_at FROM orders WHERE razorpay_payment_id IS NOT NULL ORDER BY created_at DESC").fetchall()
+    payments = conn.execute("SELECT id as order_id, razorpay_payment_id, payment_method, total_amount as amount, payment_status, created_at FROM orders WHERE razorpay_payment_id IS NOT NULL ORDER BY created_at DESC").fetchall()
     conn.close()
     return render_template('admin_payments.html', payments=payments)
 
