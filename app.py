@@ -404,12 +404,13 @@ def chat():
             User: {user_message}"""
             
             response = client.models.generate_content(
-                model='gemini-3.8-flash',
+                model='gemini-1.5-flash',
                 contents=prompt
             )
             return jsonify({'response': response.text})
         except Exception as e:
             print("AI Error:", e)
+            return jsonify({'response': f"Oops! I am having trouble connecting to my AI brain right now (Error: {str(e)}). Please try again or search the catalog manually!"})
     
     if 'laptop' in user_message:
         return jsonify({'response': "We have laptops from top brands like Apple, Dell, Lenovo, and ASUS. <a href='/products?category=Laptops'>Check our laptops here!</a>"})
