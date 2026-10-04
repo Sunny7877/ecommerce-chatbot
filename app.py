@@ -186,7 +186,16 @@ def api_create_order():
     
     conn = get_db_connection()
     
-    # Optional: For absolute safety, recalculate total from DB. Trusting frontend is OK for demo.
+    # --- BUG-002: Stock Validation Check ---
+    for item in data['items']:
+        product = conn.execute("SELECT name, stock FROM products WHERE id = ?", (item['id'],)).fetchone()
+        if not product:
+            conn.close()
+            return jsonify({'success': False, 'message': f"Product ID {item['id']} not found."})
+        if product['stock'] < item['quantity']:
+            conn.close()
+            return jsonify({'success': False, 'message': f"Insufficient stock for '{product['name']}'. Only {product['stock']} available."})
+    # ---------------------------------------
     
     razorpay_order_id = None
     if payment_method == 'Razorpay':
@@ -222,6 +231,11 @@ def api_create_order():
             INSERT INTO order_items (order_id, product_id, quantity, price)
             VALUES (?, ?, ?, ?)
         ''', (order_id, item['id'], item['quantity'], item['price']))
+        
+        # Deduct the stock
+        conn.execute('''
+            UPDATE products SET stock = stock - ? WHERE id = ?
+        ''', (item['quantity'], item['id']))
         
     conn.commit()
     conn.close()
@@ -389,19 +403,24 @@ def chat():
     
     if client:
         try:
-            prompt = f"""You are ShopEase AI, an expert, polite E-Commerce shopping assistant.
-            Use this product catalog to answer: {catalog_context}.
-            Answer the user concisely in 2-3 sentences max. 
-            Recommend actual products from the catalog if asked using a markdown link: [Product Name](/product/PRODUCT_ID). 
-            Do NOT makeup products that aren't in the catalog.
+            prompt = f"""You are ShopEase AI, a simple, friendly, and professional E-Commerce shopping assistant.
+            Your goal is to clearly understand and solve customer queries.
             
-            PAYMENT RULES:
-            - We use Razorpay (Official Gateway in Sandbox Mode).
-            - We support: UPI (QR scanning and ID), Credit Cards, Debit Cards, Net Banking, Digital Wallets, and COD.
-            - Never ask for OTP, Card numbers, CVV, UPI PIN, or passwords.
-            - Assure users that payments are 100% secure and verified server-side.
+            AVAILABLE DATA (PRODUCT CATALOG):
+            {catalog_context}
             
-            User: {user_message}"""
+            YOUR CAPABILITIES & RULES:
+            1. Products: Help customers search products, check prices, availability, compare items, and provide details using ONLY the catalog above. Do NOT makeup products. Use markdown links to recommend products: [Product Name](/product/PRODUCT_ID).
+            2. Recommendations: If a customer's request is unclear, ask follow-up questions (e.g., budget, category, preferences) before suggesting suitable products.
+            3. Orders & Tracking: If a customer asks "Where is my order?" or wants to track/cancel an order, politely ask for their order number and guide them to visit their [My Orders](/customer/dashboard) page to view live status, tracking, or cancellation options.
+            4. Policies: 
+               - Delivery: Fast delivery within 3-5 business days.
+               - Returns: 7-day easy return policy for all items.
+               - Refunds: Processed to the original payment method within 3-5 working days.
+            5. Payments: We securely accept Razorpay (UPI, Credit/Debit Cards, Net Banking, Wallets) and Cash on Delivery (COD). Never ask for OTP, card numbers, or passwords.
+            6. Support: Give accurate answers based on the provided data. If you cannot resolve an issue or if the customer needs human assistance, politely guide them to contact support at support@shopease.com or create a support request.
+            
+            User Query: {user_message}"""
             
             response = client.models.generate_content(
                 model='gemini-3.8-flash',
