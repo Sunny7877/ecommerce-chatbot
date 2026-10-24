@@ -14,30 +14,69 @@
             </div>
         </div>
         <div class="col-md-10">
-            <h3 class="mb-4">Payment Records</h3>
-            <div class="card shadow border-0">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0"><i class="bi bi-credit-card-2-front text-primary me-2"></i>Payment Records</h3>
+                <span class="badge bg-primary px-3 py-2 rounded-pill fs-6">{{ payments|length }} Total Transactions</span>
+            </div>
+            
+            <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Order ID</th>
-                                    <th>Payment ID</th>
-                                    <th>Method</th>
-                                    <th>Amount</th>
+                                    <th>Transaction / Payment ID</th>
+                                    <th>Payment Method</th>
+                                    <th>Total Amount</th>
                                     <th>Status</th>
-                                    <th>Date</th>
+                                    <th>Transaction Date</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                {% if payments|length == 0 %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-wallet2 fs-1 d-block mb-2 text-secondary"></i>
+                                        <strong>No payment records found.</strong>
+                                        <p class="small text-muted mb-0">When orders are placed, transaction details will appear here automatically.</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
                                 {% for pay in payments %}
                                 <tr>
-                                    <td>{{ pay.order_id }}</td>
-                                    <td><small class="text-muted">{{ pay.razorpay_payment_id }}</small></td>
-                                    <td>{{ pay.payment_method }}</td>
-                                    <td>₹{{ pay.amount }}</td>
-                                    <td><span class="badge bg-success">{{ pay.payment_status }}</span></td>
-                                    <td>{{ (pay.created_at | string)[:10] }}</td>
+                                    <td>
+                                        <strong class="text-dark">{{ pay.order_id }}</strong>
+                                    </td>
+                                    <td>
+                                        <code class="bg-light px-2 py-1 rounded text-primary">{{ pay.razorpay_payment_id }}</code>
+                                    </td>
+                                    <td>
+                                        {% if 'UPI' in (pay.payment_method or '') %}
+                                        <span class="badge bg-info text-dark"><i class="bi bi-qr-code me-1"></i> UPI QR</span>
+                                        {% elif 'COD' in (pay.payment_method or '') or 'Cash' in (pay.payment_method or '') %}
+                                        <span class="badge bg-secondary"><i class="bi bi-cash me-1"></i> Cash on Delivery</span>
+                                        {% else %}
+                                        <span class="badge bg-primary"><i class="bi bi-credit-card me-1"></i> {{ pay.payment_method }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong class="text-dark">₹{{ "{:,.0f}".format(pay.amount or 0) }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if pay.payment_status == 'PAID' or pay.payment_status == 'SUCCESS' %}
+                                        <span class="badge bg-success px-3 py-1">PAID</span>
+                                        {% elif pay.payment_status == 'COD_CONFIRMED' %}
+                                        <span class="badge bg-primary px-3 py-1">COD CONFIRMED</span>
+                                        {% elif pay.payment_status == 'CREATED' or pay.payment_status == 'Pending' %}
+                                        <span class="badge bg-warning text-dark px-3 py-1">PENDING</span>
+                                        {% else %}
+                                        <span class="badge bg-danger px-3 py-1">{{ pay.payment_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ (pay.created_at | string)[:19] }}</small>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
