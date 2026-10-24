@@ -65,6 +65,63 @@ def add_product():
         
     return render_template('admin_add_product.html')
 
+@admin_bp.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_product(product_id):
+    conn = get_db()
+    placeholder = '%s' if hasattr(conn, 'conn') else '?'
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        brand = request.form.get('brand')
+        category = request.form.get('category')
+        price = request.form.get('price')
+        stock = request.form.get('stock')
+        description = request.form.get('description')
+        image = request.form.get('image')
+        badge = request.form.get('badge')
+        
+        conn.execute(f'''
+            UPDATE products 
+            SET name = {placeholder}, brand = {placeholder}, category = {placeholder},
+                price = {placeholder}, stock = {placeholder}, description = {placeholder},
+                image = {placeholder}, badge = {placeholder}
+            WHERE id = {placeholder}
+        ''', (name, brand, category, price, stock, description, image, badge, product_id))
+        conn.commit()
+        conn.close()
+        
+        flash(f'Product #{product_id} updated successfully!', 'success')
+        return redirect(url_for('admin.products'))
+        
+    product = conn.execute(f"SELECT * FROM products WHERE id = {placeholder}", (product_id,)).fetchone()
+    conn.close()
+    
+    if not product:
+        flash('Product not found.', 'danger')
+        return redirect(url_for('admin.products'))
+        
+    return render_template('admin_edit_product.html', product=product)
+
+@admin_bp.route('/products/<int:product_id>/delete', methods=['POST'])
+@admin_required
+def delete_product(product_id):
+    conn = get_db()
+    placeholder = '%s' if hasattr(conn, 'conn') else '?'
+    try:
+        # Delete related order items if any
+        conn.execute(f"DELETE FROM order_items WHERE product_id = {placeholder}", (product_id,))
+        conn.execute(f"DELETE FROM products WHERE id = {placeholder}", (product_id,))
+        conn.commit()
+        flash(f'Product #{product_id} deleted successfully.', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error deleting product: {e}', 'danger')
+    finally:
+        conn.close()
+        
+    return redirect(url_for('admin.products'))
+
 @admin_bp.route('/inventory')
 @admin_required
 def inventory():
@@ -97,7 +154,17 @@ def update_order_status(order_id):
 @admin_required
 def payments():
     conn = get_db()
-    payments = conn.execute("SELECT id as order_id, razorpay_payment_id, payment_method, total_amount as amount, payment_status, created_at FROM orders WHERE razorpay_payment_id IS NOT NULL ORDER BY created_at DESC").fetchall()
+    payments = conn.execute("""
+        SELECT 
+            id as order_id, 
+            COALESCE(NULLIF(razorpay_payment_id, ''), 'PAY_' || SUBSTR(id, 4)) as razorpay_payment_id, 
+            COALESCE(NULLIF(payment_method, ''), 'Cash on Delivery') as payment_method, 
+            total_amount as amount, 
+            COALESCE(NULLIF(payment_status, ''), 'Pending') as payment_status, 
+            created_at 
+        FROM orders 
+        ORDER BY created_at DESC
+    """).fetchall()
     conn.close()
     return render_template('admin_payments.html', payments=payments)
 
