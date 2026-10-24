@@ -88,17 +88,34 @@ class PostgresWrapper:
     def close(self):
         self.conn.close()
 
+def get_db_path():
+    if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+        tmp_db = '/tmp/ecommerce.db'
+        if not os.path.exists(tmp_db) and os.path.exists(DB_PATH):
+            import shutil
+            try:
+                shutil.copy2(DB_PATH, tmp_db)
+            except Exception as e:
+                print("Failed to copy db to /tmp:", e)
+                return DB_PATH
+        return tmp_db
+    return DB_PATH
+
 def get_db_connection():
     db_url = os.getenv('DATABASE_URL')
     if db_url:
-        import psycopg2
-        conn = psycopg2.connect(db_url, sslmode='require')
-        return PostgresWrapper(conn)
-    else:
-        import sqlite3
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            import psycopg2
+            conn = psycopg2.connect(db_url, sslmode='require', connect_timeout=3)
+            return PostgresWrapper(conn)
+        except Exception as e:
+            print("Postgres connection failed, falling back to SQLite:", e)
+            
+    import sqlite3
+    db_file = get_db_path()
+    conn = sqlite3.connect(db_file)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 @app.route('/')
 def index():
