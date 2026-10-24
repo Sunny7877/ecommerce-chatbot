@@ -5,6 +5,7 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 import json
 import sqlite3
 import datetime
+import time
 import razorpay
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from dotenv import load_dotenv
@@ -101,21 +102,43 @@ def get_db_path():
         return tmp_db
     return DB_PATH
 
+_postgres_failed = False
+_cached_products = None
+_cached_products_time = 0
+
 def get_db_connection():
+    global _postgres_failed
     db_url = os.getenv('DATABASE_URL')
-    if db_url:
+    if db_url and not _postgres_failed:
         try:
             import psycopg2
-            conn = psycopg2.connect(db_url, sslmode='require', connect_timeout=3)
+            conn = psycopg2.connect(db_url, sslmode='require', connect_timeout=2)
             return PostgresWrapper(conn)
         except Exception as e:
             print("Postgres connection failed, falling back to SQLite:", e)
+            _postgres_failed = True
             
     import sqlite3
     db_file = get_db_path()
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     return conn
+
+def get_cached_products():
+    global _cached_products, _cached_products_time
+    now = time.time()
+    if _cached_products is None or (now - _cached_products_time) > 300:
+        try:
+            conn = get_db_connection()
+            rows = conn.execute('SELECT id, name, brand, category, price, discount_percentage FROM products').fetchall()
+            conn.close()
+            _cached_products = [dict(r) for r in rows]
+            _cached_products_time = now
+        except Exception as e:
+            print("Error loading products cache:", e)
+            if _cached_products is None:
+                _cached_products = []
+    return _cached_products
 
 @app.route('/')
 def index():
@@ -450,127 +473,110 @@ def api_track():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_message = request.json.get('message', '').lower()
+    data = request.json or {}
+    user_message = data.get('message', '').strip()
+    if not user_message:
+        return jsonify({'response': "Hello! How can I assist you with your shopping today?"})
+        
+    msg_lower = user_message.lower()
     
-    fallback_responses = {
-        'shipping': 'We offer fast delivery within 3-5 business days.',
-        'return': 'We have a 7-day easy return policy for all items.',
-        'refund': 'Refunds are processed to the original payment method within 3-5 working days.',
-        'payment': 'We accept UPI (QR Code & ID), Credit/Debit Cards, Net Banking, Wallets via our secure Razorpay gateway, and Cash on Delivery.',
-        'track': 'You can track your order using the Track Order page with your Order ID.'
-    }
-    
-    for key, val in fallback_responses.items():
-        if key in user_message and not client:
-            return jsonify({'response': val})
-            
-    conn = get_db_connection()
-    products_raw = conn.execute('SELECT id, name, brand, category, price, discount_percentage FROM products LIMIT 150').fetchall()
-    conn.close()
-    catalog_context = "Products: " + "; ".join([f"[{p['id']}] {p['brand']} {p['name']} - Rs.{p['price']} ({p['discount_percentage']}% off)" for p in products_raw])
-    
+    # 1. Instant Rules / FAQs (<10ms response time)
+    # Greetings
+    greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'namaste', 'start']
+    if msg_lower in greetings or any(msg_lower == g for g in greetings):
+        return jsonify({'response': "Hello! Welcome to ShopEase. How can I help you today? You can ask me to find products, recommend laptops or smartphones, track your order, or check our delivery & return policies."})
+        
+    # Return / Refund
+    if any(k in msg_lower for k in ['return policy', 'refund policy', 'how to return', 'return product', 'refund process', 'refund status', 'return item']):
+        return jsonify({'response': "We offer a 7-day hassle-free return and replacement policy on all products. Once picked up, refunds are credited to your original payment method within 3-5 business days."})
+        
+    # Shipping / Delivery
+    if any(k in msg_lower for k in ['shipping policy', 'delivery time', 'how many days', 'when will it deliver', 'free delivery', 'shipping charge', 'shipping fee']):
+        return jsonify({'response': "We provide fast delivery across India within 3-5 business days. Free shipping is automatically applied on all orders above ₹499!"})
+        
+    # Payment methods
+    if any(k in msg_lower for k in ['payment method', 'how to pay', 'accept upi', 'accept cod', 'cash on delivery', 'payment option', 'pay options']):
+        return jsonify({'response': "We accept multiple secure payment options: UPI (Google Pay, PhonePe, Paytm, QR Code), Credit/Debit Cards, Net Banking, and Cash on Delivery (COD)."})
+        
+    # Track order
+    if any(k in msg_lower for k in ['track order', 'where is my order', 'track my order', 'order status', 'check order']):
+        return jsonify({'response': "You can check your live order status anytime on our <a href='/track-order' style='color:#6366f1;font-weight:600;'>Track Order page</a> using your Order ID (e.g. ORD...)." })
+        
+    # Customer support / Contact
+    if any(k in msg_lower for k in ['customer care', 'customer support', 'contact support', 'speak with someone', 'complaint', 'help desk']):
+        return jsonify({'response': "Our support team is here for you 24/7! You can reach us via our <a href='/contact' style='color:#6366f1;font-weight:600;'>Contact page</a> or email support@shopease.com."})
+        
+    # 2. AI Chatbot via Gemini (Fast-response models with prompt optimization)
     if client:
         try:
-            prompt = f"""You are an AI customer-support chatbot for an e-commerce shopping website. Your main purpose is to understand and solve different types of customer questions related to online shopping. Reply in simple, polite, helpful, and professional language.
+            # Filter relevant products from in-memory cache to keep prompt small & fast
+            all_products = get_cached_products()
+            words = [w for w in msg_lower.replace('?', ' ').replace('.', ' ').replace(',', ' ').split() if len(w) > 2]
+            
+            # Match products by word in name, category, or brand
+            matched = [
+                p for p in all_products 
+                if any(w in p['name'].lower() or w in p['category'].lower() or w in p['brand'].lower() for w in words)
+            ]
+            
+            # If matched, use matched (up to 15); otherwise, take top 15 general items
+            selected_products = matched[:15] if matched else all_products[:15]
+            catalog_context = "; ".join([
+                f"[{p['id']}] {p['brand']} {p['name']} - Rs.{int(p['price'])} ({p['category']})"
+                for p in selected_products
+            ])
+            
+            prompt = f"""You are the friendly, expert AI sales assistant for ShopEase online store.
+AVAILABLE PRODUCTS IN STORE:
+{catalog_context}
 
-            AVAILABLE PRODUCT DATA (USE THIS TO ANSWER PRODUCT QUERIES):
-            {catalog_context}
+RULES:
+1. Always be polite, concise, and helpful (keep responses under 3 to 4 sentences).
+2. Recommend relevant products using markdown links: [Product Name](/product/ID).
+3. Mention prices in Rs. (INR).
+4. Store policies: 7-day returns, 3-5 days delivery, free shipping over Rs.499, UPI/Cards/COD accepted.
+5. If user asks for an order update, direct them to /track-order.
+6. If the requested product is not in the list, suggest the closest matching item from the store.
 
-            You should handle the following types of customer queries:
-            
-            1. Product Queries
-            - "Show me men's shoes under ₹2,000."
-            - "Do you have black handbags?"
-            - "What is the price of this product?"
-            - "Is this product available in medium size?"
-            - "What are the features of this mobile?"
-            - "Which laptop is best for students?"
-            - "Suggest a gift under ₹1,000."
-            
-            2. Product Comparison Queries
-            - "Compare iPhone and Samsung phones."
-            - "Which is better: product A or product B?"
-            - "Compare these two laptops by price and RAM."
-            
-            3. Cart Queries
-            - "Add this item to my cart."
-            - "Remove the shirt from my cart."
-            - "Show my cart."
-            - "Why is my coupon not working?"
-            
-            4. Order Queries
-            - "How do I place an order?"
-            - "Has my order been confirmed?"
-            - "Can I change my order?"
-            - "Can I cancel my order?"
-            
-            5. Delivery and Tracking Queries
-            - "Where is my order?"
-            - "Track my order."
-            - "When will my order arrive?"
-            - "Do you deliver to my pin code?"
-            
-            6. Payment Queries
-            - "What payment methods are available?"
-            - "Do you accept cash on delivery?"
-            - "My payment failed."
-            - "Can I pay using UPI?"
-            
-            7. Discount and Coupon Queries
-            - "Do you have any offers?"
-            - "How do I apply a coupon code?"
-            
-            8. Return, Replacement, and Refund Queries
-            - "How can I return a product?"
-            - "Can I replace this item?"
-            - "My product is damaged."
-            - "When will I get my refund?"
-            
-            9. Account Queries
-            - "How do I create an account?"
-            - "I forgot my password."
-            - "Where can I see my order history?"
-            
-            10. Customer Support and Complaint Queries
-            - "I want to speak with customer care."
-            - "I want to register a complaint."
-            - "I received a damaged product."
-            
-            11. Store Policy Queries
-            - "What is your return policy?"
-            - "How many days does delivery take?"
-            - "Is shipping free?"
-            - "What are your cancellation rules?"
+Customer: {user_message}
+Assistant:"""
 
-            Instructions for responding:
-            - First, identify the category of the customer's question.
-            - Give an accurate and easy-to-understand answer. Use markdown links to recommend products: [Product Name](/product/PRODUCT_ID).
-            - Ask follow-up questions if details are missing, such as product name, order ID, pin code, size, colour, or payment reference.
-            - Use available product, cart, order, customer, and store-policy data.
-            - Do not make up prices, order status, stock details, delivery dates, or refund information.
-            - Confirm important actions, including placing orders, cancelling orders, adding items to cart, starting returns, and creating complaints.
-            - Never ask for passwords, OTPs, CVV, PIN, or full card details.
-            - Keep customer information private and secure.
-            - If you cannot solve a problem, say: "I'm sorry, I could not resolve this completely. I can create a support request for our customer service team."
-            - Always end with: "Is there anything else I can help you with?"
-
-            User Query: {user_message}"""
+            # Try fastest models first
+            fast_models = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite']
+            ai_response = None
             
-            response = client.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=prompt
-            )
-            return jsonify({'response': response.text})
+            for m in fast_models:
+                try:
+                    res = client.models.generate_content(
+                        model=m,
+                        contents=prompt
+                    )
+                    if res and res.text:
+                        ai_response = res.text
+                        break
+                except Exception as model_err:
+                    print(f"Model {m} error: {model_err}")
+                    continue
+                    
+            if ai_response:
+                return jsonify({'response': ai_response})
+            else:
+                return jsonify({'response': "I'm sorry, my AI brain is experiencing high demand right now (Google API is busy). Please try asking again in a few moments, or use the search bar to find products!"})
         except Exception as e:
-            print("AI Error:", e)
+            print("Chatbot processing error:", e)
             return jsonify({'response': "I'm sorry, my AI brain is experiencing high demand right now (Google API is busy). Please try asking again in a few moments, or use the search bar to find products!"})
-    
-    if 'laptop' in user_message:
-        return jsonify({'response': "We have laptops from top brands like Apple, Dell, Lenovo, and ASUS. <a href='/products?category=Laptops'>Check our laptops here!</a>"})
-    elif 'phone' in user_message or 'smartphone' in user_message:
-        return jsonify({'response': "We offer top iPhones, Samsung Galaxy, OnePlus, and Google Pixel. <a href='/products?category=Smartphones'>Browse Smartphones!</a>"})
-    
-    return jsonify({'response': "I can help you find products, check prices, track orders, or answer payment questions. What are you looking for today?"})
+
+    # 3. Smart Fallback if AI is unavailable or rate-limited
+    if 'laptop' in msg_lower:
+        return jsonify({'response': "We offer top laptops from Apple, Dell, Lenovo, and ASUS. Explore our <a href='/products?category=Laptops' style='color:#6366f1;font-weight:600;'>Laptops Collection</a>!"})
+    elif 'phone' in msg_lower or 'mobile' in msg_lower or 'smartphone' in msg_lower:
+        return jsonify({'response': "Check out our latest smartphones including iPhone, Samsung Galaxy, and OnePlus on our <a href='/products?category=Smartphones' style='color:#6366f1;font-weight:600;'>Smartphones Collection</a>!"})
+    elif 'shoe' in msg_lower or 'footwear' in msg_lower or 'sneaker' in msg_lower:
+        return jsonify({'response': "Find great athletic and casual footwear from Nike, Puma, and Adidas in our <a href='/products?category=Footwear' style='color:#6366f1;font-weight:600;'>Footwear Collection</a>!"})
+    elif 'cloth' in msg_lower or 'shirt' in msg_lower or 'dress' in msg_lower or 'fashion' in msg_lower:
+        return jsonify({'response': "Browse trendy men's and women's fashion in our <a href='/products?category=Fashion' style='color:#6366f1;font-weight:600;'>Fashion Collection</a>!"})
+        
+    return jsonify({'response': "I can help you explore products, check discounts, track your order, or answer questions about payments and returns. What can I help you find today?"})
 
 @app.route('/about')
 def about():
