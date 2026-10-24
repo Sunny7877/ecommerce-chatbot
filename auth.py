@@ -112,11 +112,13 @@ def admin_login():
 @auth_bp.route('/logout')
 def logout():
     session.clear()
+    session['clear_chat'] = True
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/admin/logout')
 def admin_logout():
     session.clear()
+    session['clear_chat'] = True
     flash('Admin logged out.', 'info')
     return redirect(url_for('auth.admin_login'))

@@ -166,12 +166,17 @@
     <div id="chatbot-widget">
         <button id="chatbot-btn"><i class="bi bi-chat-left-dots-fill"></i></button>
         <div id="chatbot-window">
-            <div class="chatbot-header">
+            <div class="chatbot-header d-flex align-items-center justify-content-between">
                 <div><i class="bi bi-robot me-2"></i> AI Shopping Assistant</div>
-                <button id="close-chatbot" class="btn-close btn-close-white"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <button id="clear-chat-btn" class="btn btn-sm text-white-50 p-0 border-0" title="Clear Chat History" style="background: none; font-size: 0.95rem; line-height: 1;">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                    <button id="close-chatbot" class="btn-close btn-close-white" title="Close Chat"></button>
+                </div>
             </div>
             <div class="chatbot-body" id="chat-body">
-                <div class="chat-message bot-msg">Hello! Welcome to our shopping assistant. I can help you find products, compare items, manage your cart, track orders, handle returns and refunds, and answer account or payment questions. How may I help you today?</div>
+                <div class="chat-message bot-msg">Hello! Welcome to our e-commerce shopping assistant. You can ask me about products, prices, offers, cart items, orders, delivery, payments, returns, refunds, accounts, and customer support. How may I help you today?</div>
             </div>
             <div class="chatbot-footer bg-white p-3 border-top">
                 <div class="input-group">
@@ -184,6 +189,10 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        const CURRENT_USER_ID = {{ session.get('user_id', 0) | tojson }};
+        const CLEAR_CHAT_FLAG = {{ 'true' if session.pop('clear_chat', False) else 'false' }};
+    </script>
     <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
